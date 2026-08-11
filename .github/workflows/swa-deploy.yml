@@ -1,0 +1,87 @@
+name: Deploy Frontend to Static Web App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'angular.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'public/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.CLIENT_ID }}
+          tenant-id: ${{ vars.TENANT_ID }}
+          subscription-id: ${{ vars.SUBSCRIPTION_ID }}
+
+      - name: Resolve backend URL and API key from Azure
+        run: |
+          # Récupère l'URL du backend via les tags (owner + component)
+          BACKEND_URL=$(az webapp list \
+            --query "[?tags.owner=='${{ vars.OWNER }}' && tags.component=='back'].defaultHostName" \
+            -o tsv)
+          echo "Backend URL: $BACKEND_URL"
+
+          # Récupère le nom du Key Vault via les tags
+          VAULT_NAME=$(az keyvault list \
+            --query "[?tags.owner=='${{ vars.OWNER }}' && tags.component=='keyvault'].name" \
+            -o tsv)
+          echo "Key Vault: $VAULT_NAME"
+          echo "VAULT_NAME=$VAULT_NAME" >> $GITHUB_ENV
+
+          # Lit le secret 'backend-api-key' dans le Key Vault
+          API_KEY=$(az keyvault secret show \
+            --vault-name $VAULT_NAME \
+            --name backend-api-key \
+            --query value -o tsv)
+
+          # Remplace les placeholders dans le fichier d'environnement Angular
+          cd azure-quiz-frontend/src/environments
+          sed -i "s|https://REPLACE_WITH_PROD_API_URL/api|https://${BACKEND_URL}/api|g" environment.ts
+          sed -i "s|__BACKEND_API_KEY__|${API_KEY}|g" environment.ts
+
+          echo "Placeholders remplacés avec succès"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Build Angular app
+        run: |
+          cd azure-quiz-frontend
+          npm ci
+          npm run build:prod
+
+      - name: Read SWA token from Key Vault
+        run: |
+          SWA_TOKEN=$(az keyvault secret show \
+            --vault-name $VAULT_NAME \
+            --name swa-deployment-token \
+            --query value -o tsv)
+          echo "SWA_TOKEN=$SWA_TOKEN" >> $GITHUB_ENV
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ env.SWA_TOKEN }}
+          action: "upload"
+          skip_app_build: true
+          app_location: "azure-quiz-frontend/dist/azure-quiz-frontend/browser"
+          api_location: ""
+          output_location: ""
