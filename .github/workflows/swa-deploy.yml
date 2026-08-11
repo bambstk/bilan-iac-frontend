@@ -51,7 +51,7 @@ jobs:
             --query value -o tsv)
 
           # Remplace les placeholders dans le fichier d'environnement Angular
-          cd azure-quiz-frontend/src/environments
+          cd src/environments
           sed -i "s|https://REPLACE_WITH_PROD_API_URL/api|https://${BACKEND_URL}/api|g" environment.ts
           sed -i "s|__BACKEND_API_KEY__|${API_KEY}|g" environment.ts
 
@@ -64,7 +64,6 @@ jobs:
 
       - name: Build Angular app
         run: |
-          cd azure-quiz-frontend
           npm ci
           npm run build:prod
 
@@ -82,6 +81,6 @@ jobs:
           azure_static_web_apps_api_token: ${{ env.SWA_TOKEN }}
           action: "upload"
           skip_app_build: true
-          app_location: "azure-quiz-frontend/dist/azure-quiz-frontend/browser"
+          app_location: "dist/azure-quiz-frontend/browser"
           api_location: ""
           output_location: ""
