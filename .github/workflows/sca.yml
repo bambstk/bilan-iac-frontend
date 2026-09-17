@@ -1,0 +1,47 @@
+name: SCA - Dependencies
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+      - name: Run Trivy (filesystem)
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          scanners: 'vuln'
+          severity: 'HIGH,CRITICAL'
+          format: 'table'
+          exit-code: '1'
+
+      - name: Trivy IaC misconfig
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          scan-type: 'fs'
+          scanners: 'misconfig'
+          severity: 'HIGH,CRITICAL'
+          format: 'table'
+          exit-code: '1'
+
+
+      - name: Build Docker image
+        run: docker build -t quiz-frontend:ci-scan .
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          scan-type: 'image'
+          image-ref: 'quiz-frontend:ci-scan'
+          scanners: 'vuln'
+          severity: 'HIGH,CRITICAL'
+          format: 'table'
+          exit-code: '1'
