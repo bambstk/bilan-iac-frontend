@@ -1,0 +1,21 @@
+name: Accessibility Check
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  accessibility:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run build:prod
+      - name: Serve build
+        run: npx http-server dist/azure-quiz-frontend/browser -p 4200 --silent &
+      - name: Run axe-core
+        run: npx @axe-core/cli http://localhost:4200 --exit
