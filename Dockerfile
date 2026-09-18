@@ -31,7 +31,9 @@ RUN sed -i "s#https://REPLACE_WITH_PROD_API_URL/api#${API_BASE_URL}#" src/enviro
 RUN npm run build:prod
 
 # ── Runtime stage ────────────────────────────────────────────────────────────
-FROM nginx:1.27-alpine
+FROM nginx:1.31-alpine
+
+RUN apk upgrade --no-cache && rm -rf /var/cache/apk/*
 
 
 RUN chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx \
