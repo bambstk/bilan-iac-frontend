@@ -32,7 +32,17 @@ RUN npm run build:prod
 
 # ── Runtime stage ────────────────────────────────────────────────────────────
 FROM nginx:1.27-alpine
+
+
+RUN chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx \
+ && touch /var/run/nginx.pid \
+ && chown nginx:nginx /var/run/nginx.pid
+
+# Copier la config et le build (existant)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/azure-quiz-frontend/browser /usr/share/nginx/html
 
-EXPOSE 80
+# Basculer sur l'utilisateur non-root
+USER nginx
+
+EXPOSE 8080
