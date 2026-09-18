@@ -37,14 +37,13 @@ jobs:
           format: 'table'
           exit-code: '1'
 
-      - name: Install dependencies
-        run: npm ci
-      - name: Build Angular app
-        run: npm run build:prod
-
       - name: Build Docker image
         if: always()
-        run: docker build -t quiz-frontend:ci-scan .
+        run: |
+          docker build \
+            --build-arg API_BASE_URL="https://example.com/api" \
+            --build-arg API_KEY="test" \
+            -t quiz-frontend:ci-scan .
       - name: Trivy image scan
         if: always()
         uses: aquasecurity/trivy-action@v0.36.0
