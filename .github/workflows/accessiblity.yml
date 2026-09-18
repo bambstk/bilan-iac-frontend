@@ -18,5 +18,9 @@ jobs:
       - run: npm run build:prod
       - name: Serve build
         run: npx http-server dist/azure-quiz-frontend/browser -p 4200 --silent &
+        
+      - name: Install Chromedriver
+        run: npx browser-driver-manager install chrome
+
       - name: Run axe-core
         run: npx @axe-core/cli http://localhost:4200 --exit
