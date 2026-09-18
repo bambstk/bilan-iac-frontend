@@ -1,0 +1,23 @@
+name: DAST - OWASP ZAP
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  dast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+      - run: npm ci
+      - run: npm run build:prod
+      - name: Serve build
+        run: npx http-server dist/azure-quiz-frontend/browser -p 4200 --silent &
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: 'http://localhost:4200'
+          fail_action: false   # informatif pour l'instant
