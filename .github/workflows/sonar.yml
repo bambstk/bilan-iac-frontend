@@ -24,3 +24,11 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Vérifier le Quality Gate
+        uses: phwt/sonarqube-quality-gate-action@v1
+        with:
+          sonar-project-key: bambstk_azure-quiz-frontend
+          sonar-host-url: https://sonarcloud.io
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
